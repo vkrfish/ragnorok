@@ -1,0 +1,27 @@
+# Environment & Secrets
+.env
+*.env
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Media & Storage
+media/
+*.db
+*.sqlite3
+
+# Temp Scratch Scripts
+scratch/
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

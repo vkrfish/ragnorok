@@ -1,0 +1,19 @@
+{
+  "config": {
+    "project_name": "Notebook RAG",
+    "embedding_model": "bge-m3-v1",
+    "vector_store": "Qdrant / InMemory",
+    "relevance_threshold": 0.4,
+    "llm_model": "claude-3-5-sonnet",
+    "prompt_version": "qa_v1",
+    "total_questions": 10
+  },
+  "metrics": {
+    "recall_at_k": 1.0,
+    "mrr": 1.0,
+    "faithfulness": 1.0,
+    "answer_correctness": 1.0,
+    "citation_accuracy": 1.0,
+    "unanswerable_handled_rate": 1.0
+  }
+}
