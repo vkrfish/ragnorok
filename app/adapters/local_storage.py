@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 from typing import BinaryIO
+
 from app.adapters.base import StorageAdapter
 from app.core.errors import StorageError
 from app.core.logging import logger
@@ -24,8 +25,8 @@ class LocalStorageAdapter(StorageAdapter):
     ) -> str:
         try:
             target_dir = self.base_path / notebook_id / source_id
-            target_dir.mkdir(parents=True, exist_ok=True)
             target_file = target_dir / filename
+            target_file.parent.mkdir(parents=True, exist_ok=True)
 
             file_obj.seek(0)
             with open(target_file, "wb") as buffer:
@@ -35,8 +36,8 @@ class LocalStorageAdapter(StorageAdapter):
             logger.info(f"Saved file to local storage: {relative_path}")
             return relative_path
         except Exception as e:
-            logger.error(f"Failed to save file to local storage: {str(e)}")
-            raise StorageError(f"Local storage save failed: {str(e)}")
+            logger.error(f"Failed to save file to local storage: {e!s}")
+            raise StorageError(f"Local storage save failed: {e!s}")
 
     async def get(self, file_path: str) -> bytes:
         try:
@@ -46,7 +47,7 @@ class LocalStorageAdapter(StorageAdapter):
             with open(full_path, "rb") as f:
                 return f.read()
         except Exception as e:
-            raise StorageError(f"Local storage get failed: {str(e)}")
+            raise StorageError(f"Local storage get failed: {e!s}")
 
     async def delete(self, file_path: str) -> bool:
         try:
@@ -56,7 +57,7 @@ class LocalStorageAdapter(StorageAdapter):
                 return True
             return False
         except Exception as e:
-            raise StorageError(f"Local storage delete failed: {str(e)}")
+            raise StorageError(f"Local storage delete failed: {e!s}")
 
     async def exists(self, file_path: str) -> bool:
         full_path = self.base_path / file_path

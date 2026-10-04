@@ -1,15 +1,15 @@
 import hashlib
 import io
 import uuid
-from typing import List, Optional
-from fastapi import APIRouter, Depends, File, Header, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.adapters.factory import get_storage_adapter
+from fastapi import APIRouter, Depends, File, Header, UploadFile, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.adapters.base import StorageAdapter
+from app.adapters.factory import get_storage_adapter
 from app.core.db import get_db
-from app.core.errors import NotFoundError, RagnorkException
+from app.core.errors import NotFoundError
 from app.core.logging import logger
 from app.domain.models import Notebook, Source, SourceStatus
 from app.domain.schemas import ListSourcesResponse, SourceResponse
@@ -17,7 +17,7 @@ from app.domain.schemas import ListSourcesResponse, SourceResponse
 router = APIRouter()
 
 
-def get_user_id(x_user_id: Optional[str] = Header(None, alias="X-User-ID")) -> str:
+def get_user_id(x_user_id: str | None = Header(None, alias="X-User-ID")) -> str:
     """Extract user_id for tenant isolation boundary."""
     return x_user_id or "default_user"
 
@@ -141,7 +141,10 @@ async def list_sources(
         )
     )
     sources = result.scalars().all()
-    return ListSourcesResponse(sources=list(sources), total=len(sources))
+    return ListSourcesResponse(
+        sources=[SourceResponse.model_validate(s) for s in sources],
+        total=len(sources),
+    )
 
 
 @router.get("/{notebook_id}/sources/{source_id}", response_model=SourceResponse)

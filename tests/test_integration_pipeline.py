@@ -1,12 +1,12 @@
 import io
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.main import app
 from app.adapters.factory import get_storage_adapter
-from app.adapters.local_storage import LocalStorageAdapter
 from app.ingestion.pipeline import IngestionPipeline
+from app.main import app
 from app.workers.tasks import shared_embedder, shared_vector_store
 
 

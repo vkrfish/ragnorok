@@ -1,25 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class Embedder(ABC):
     """Abstract interface for text embedding models."""
 
     @abstractmethod
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         """Embed a single text string into a dense vector."""
-        pass
 
     @abstractmethod
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Embed a batch of text strings into dense vectors."""
-        pass
 
     @property
     @abstractmethod
     def dimension(self) -> int:
         """Vector dimension size."""
-        pass
 
 
 class FakeEmbedder(Embedder):
@@ -28,7 +24,7 @@ class FakeEmbedder(Embedder):
     def __init__(self, dim: int = 1024):
         self._dim = dim
 
-    def _generate_vector(self, text: str) -> List[float]:
+    def _generate_vector(self, text: str) -> list[float]:
         # Hash text to generate deterministic float vector
         import hashlib
         h = hashlib.sha256(text.encode("utf-8")).digest()
@@ -36,10 +32,10 @@ class FakeEmbedder(Embedder):
         vec = [(val + i * 0.001) % 1.0 for i in range(self._dim)]
         return vec
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         return self._generate_vector(text)
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         return [self._generate_vector(t) for t in texts]
 
     @property

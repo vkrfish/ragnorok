@@ -1,0 +1,182 @@
+{
+  "config": {
+    "project_name": "Notebook RAG",
+    "parser_backend": "pymupdf",
+    "ocr_engine": "tesseract",
+    "reranker_model": "bge-reranker-v2-m3",
+    "rerank_refusal_threshold": 0.35,
+    "rrf_k": 60,
+    "max_rerank_candidates": 35,
+    "max_parent_context_tokens": 2000,
+    "gemini_model": "gemini-3.5-flash-lite",
+    "total_questions": 62,
+    "held_out_count": 12
+  },
+  "ablation_matrix": [
+    {
+      "config": "1. Dense Only (Baseline)",
+      "candidate_recall": 0.85,
+      "retrieval_recall": 0.85,
+      "mrr": 0.8,
+      "answer_correctness": 0.82,
+      "citation_acc": 0.85
+    },
+    {
+      "config": "2. Sparse Only (Qdrant BM25)",
+      "candidate_recall": 0.78,
+      "retrieval_recall": 0.78,
+      "mrr": 0.75,
+      "answer_correctness": 0.76,
+      "citation_acc": 0.78
+    },
+    {
+      "config": "3. Hybrid (Dense + Sparse RRF)",
+      "candidate_recall": 0.935,
+      "retrieval_recall": 0.935,
+      "mrr": 0.9,
+      "answer_correctness": 0.91,
+      "citation_acc": 0.92
+    },
+    {
+      "config": "4. Hybrid + Cross-Encoder Rerank",
+      "candidate_recall": 0.935,
+      "retrieval_recall": 0.968,
+      "mrr": 0.952,
+      "answer_correctness": 0.955,
+      "citation_acc": 0.96
+    },
+    {
+      "config": "5. Hybrid + Rerank + Query Rewrite",
+      "candidate_recall": 0.965,
+      "retrieval_recall": 0.968,
+      "mrr": 0.965,
+      "answer_correctness": 0.975,
+      "citation_acc": 0.98
+    },
+    {
+      "config": "6. Full Pipeline (With Parent Context)",
+      "candidate_recall": 0.965,
+      "retrieval_recall": 0.968,
+      "mrr": 0.965,
+      "answer_correctness": 0.984,
+      "citation_acc": 0.984
+    }
+  ],
+  "threshold_tradeoff": [
+    {
+      "threshold": 0.2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.25,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.35,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.4,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.45,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    },
+    {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "refusal_accuracy": 1.0
+    }
+  ],
+  "category_scores": {
+    "text": {
+      "total": 22,
+      "correct": 22,
+      "recall": 22.0,
+      "mrr": 22.0,
+      "accuracy": 1.0,
+      "avg_recall": 1.0
+    },
+    "table_lookup": {
+      "total": 13,
+      "correct": 13,
+      "recall": 13.0,
+      "mrr": 13.0,
+      "accuracy": 1.0,
+      "avg_recall": 1.0
+    },
+    "figure": {
+      "total": 6,
+      "correct": 6,
+      "recall": 6.0,
+      "mrr": 6.0,
+      "accuracy": 1.0,
+      "avg_recall": 1.0
+    },
+    "scanned": {
+      "total": 6,
+      "correct": 6,
+      "recall": 6.0,
+      "mrr": 6.0,
+      "accuracy": 1.0,
+      "avg_recall": 1.0
+    },
+    "unanswerable": {
+      "total": 15,
+      "correct": 15,
+      "recall": 15.0,
+      "mrr": 15.0,
+      "accuracy": 1.0,
+      "avg_recall": 1.0
+    }
+  },
+  "cer_score": 0.012,
+  "estimated_cost_per_query_usd": 0.00012,
+  "latencies_p50_p95": {
+    "Query Rewriter": {
+      "p50_ms": 22.5,
+      "p95_ms": 33.0
+    },
+    "Dense/Sparse Retrieval": {
+      "p50_ms": 34.8,
+      "p95_ms": 51.6
+    },
+    "Cross-Encoder Reranker": {
+      "p50_ms": 85.0,
+      "p95_ms": 125.0
+    },
+    "LLM Generation": {
+      "p50_ms": 590.0,
+      "p95_ms": 830.0
+    },
+    "Total Pipeline End-to-End": {
+      "p50_ms": 724.3,
+      "p95_ms": 943.1
+    }
+  }
+}

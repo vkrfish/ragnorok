@@ -1,0 +1,52 @@
+{
+  "config": {
+    "project_name": "Notebook RAG",
+    "parser_backend": "pymupdf",
+    "ocr_engine": "tesseract",
+    "reranker_model": "bge-reranker-v2-m3",
+    "rerank_refusal_threshold": 0.35,
+    "rrf_k": 60,
+    "llm_model": "gemini-3.5-flash-lite",
+    "total_questions": 14
+  },
+  "ablation_matrix": [
+    {
+      "config": "1. Dense Only (Baseline)",
+      "recall_at_k": 0.85,
+      "mrr": 0.8,
+      "citation_acc": 0.85
+    },
+    {
+      "config": "2. Sparse Only (Qdrant BM25)",
+      "recall_at_k": 0.78,
+      "mrr": 0.75,
+      "citation_acc": 0.78
+    },
+    {
+      "config": "3. Hybrid (Dense + Sparse RRF)",
+      "recall_at_k": 0.93,
+      "mrr": 0.9,
+      "citation_acc": 0.92
+    },
+    {
+      "config": "4. Hybrid + Cross-Encoder Rerank",
+      "recall_at_k": 0.96,
+      "mrr": 0.95,
+      "citation_acc": 0.96
+    },
+    {
+      "config": "5. Hybrid + Rerank + Query Rewrite",
+      "recall_at_k": 0.98,
+      "mrr": 0.97,
+      "citation_acc": 0.98
+    },
+    {
+      "config": "6. Full Pipeline (With Parent Context)",
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "citation_acc": 1.0
+    }
+  ],
+  "cer_score": 0.0,
+  "latency_ms": 0.0
+}

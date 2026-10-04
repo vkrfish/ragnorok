@@ -1,6 +1,4 @@
-import pytest
 from app.ingestion.parser import PyMuPDFParser
-from app.domain.models import ElementType
 
 
 def test_parser_header_footer_stripping_and_ocr():

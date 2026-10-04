@@ -1,13 +1,14 @@
-from fastapi import HTTPException, Request, status
+from typing import Any
+
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Any, Dict, Optional
 
 
 class APIErrorResponse(BaseModel):
     error_code: str
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
 
 class RagnorkException(Exception):
@@ -17,7 +18,7 @@ class RagnorkException(Exception):
         message: str,
         error_code: str = "INTERNAL_ERROR",
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(message)
         self.message = message
@@ -27,7 +28,7 @@ class RagnorkException(Exception):
 
 
 class NotFoundError(RagnorkException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             error_code="NOT_FOUND",
@@ -36,8 +37,18 @@ class NotFoundError(RagnorkException):
         )
 
 
+class ForbiddenError(RagnorkException):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
+        super().__init__(
+            message=message,
+            error_code="FORBIDDEN",
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
 class StorageError(RagnorkException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             error_code="STORAGE_ERROR",
@@ -47,7 +58,7 @@ class StorageError(RagnorkException):
 
 
 class DuplicateResourceError(RagnorkException):
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             error_code="DUPLICATE_RESOURCE",
@@ -56,12 +67,23 @@ class DuplicateResourceError(RagnorkException):
         )
 
 
-async def ragnork_exception_handler(request: Request, exc: RagnorkException) -> JSONResponse:
+async def ragnork_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    if isinstance(exc, RagnorkException):
+        status_code = exc.status_code
+        error_code = exc.error_code
+        message = exc.message
+        details = exc.details
+    else:
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        error_code = "INTERNAL_ERROR"
+        message = str(exc)
+        details = {}
+
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=status_code,
         content=APIErrorResponse(
-            error_code=exc.error_code,
-            message=exc.message,
-            details=exc.details,
+            error_code=error_code,
+            message=message,
+            details=details,
         ).model_dump(),
     )

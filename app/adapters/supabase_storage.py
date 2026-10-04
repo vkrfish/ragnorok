@@ -1,5 +1,7 @@
 from typing import BinaryIO
-from supabase import create_client, Client
+
+from supabase import Client, create_client
+
 from app.adapters.base import StorageAdapter
 from app.adapters.local_storage import LocalStorageAdapter
 from app.core.config import settings
@@ -57,7 +59,7 @@ class SupabaseStorageAdapter(StorageAdapter):
         except Exception as e:
             if await self._local_fallback.exists(file_path):
                 return await self._local_fallback.get(file_path)
-            raise StorageError(f"Storage get failed: {str(e)}")
+            raise StorageError(f"Storage get failed: {e!s}")
 
     async def delete(self, file_path: str) -> bool:
         try:

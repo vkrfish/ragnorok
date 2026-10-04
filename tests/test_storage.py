@@ -1,6 +1,8 @@
 import io
 import tempfile
+
 import pytest
+
 from app.adapters.local_storage import LocalStorageAdapter
 
 

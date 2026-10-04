@@ -1,5 +1,6 @@
-from typing import List, Optional
+
 from pydantic import BaseModel
+
 from app.domain.models import ElementType
 from app.ingestion.parser import ParsedElement
 
@@ -10,8 +11,8 @@ class ChunkData(BaseModel):
     content: str
     embeddable_text: str
     token_count: int
-    heading_path: Optional[str] = None
-    bbox: Optional[dict] = None
+    heading_path: str | None = None
+    bbox: dict | None = None
     is_embeddable: bool = True
 
 
@@ -25,31 +26,31 @@ class SectionAwareChunker:
     def _estimate_tokens(self, text: str) -> int:
         return max(1, len(text) // 4)
 
-    def chunk_elements(self, elements: List[ParsedElement]) -> List[ChunkData]:
-        chunks: List[ChunkData] = []
-        heading_stack: List[str] = []
+    def chunk_elements(self, elements: list[ParsedElement]) -> list[ChunkData]:
+        chunks: list[ChunkData] = []
+        heading_stack: list[str] = []
 
         for idx, elem in enumerate(elements):
             if elem.type == ElementType.HEADING:
                 heading_stack.append(elem.content)
-                heading_path = " > ".join(heading_stack)
+                current_heading_path: str | None = " > ".join(heading_stack)
 
                 chunks.append(
                     ChunkData(
                         element_index=idx,
                         page_number=elem.page_number,
                         content=elem.content,
-                        embeddable_text=f"[Section: {heading_path}]\n{elem.content}",
+                        embeddable_text=f"[Section: {current_heading_path}]\n{elem.content}",
                         token_count=self._estimate_tokens(elem.content),
-                        heading_path=heading_path,
+                        heading_path=current_heading_path,
                         bbox=elem.bbox,
                         is_embeddable=True,
                     )
                 )
 
             elif elem.type == ElementType.TABLE:
-                heading_path = " > ".join(heading_stack) if heading_stack else None
-                prefix = f"[Section: {heading_path}]\n" if heading_path else ""
+                current_heading_path = " > ".join(heading_stack) if heading_stack else None
+                prefix = f"[Section: {current_heading_path}]\n" if current_heading_path else ""
 
                 # Summary is used for embedding, raw table markdown is stored in content
                 summary_text = elem.summary or f"Table on page {elem.page_number}: {elem.content[:100]}"
@@ -62,17 +63,24 @@ class SectionAwareChunker:
                         content=elem.content,
                         embeddable_text=embeddable,
                         token_count=self._estimate_tokens(elem.content),
-                        heading_path=heading_path,
+                        heading_path=current_heading_path,
                         bbox=elem.bbox,
                         is_embeddable=True,
                     )
                 )
 
             elif elem.type == ElementType.FIGURE:
-                heading_path = " > ".join(heading_stack) if heading_stack else None
+                current_heading_path = " > ".join(heading_stack) if heading_stack else None
                 # Non-Negotiable: Do NOT embed placeholder figure captions!
                 is_embeddable = bool(elem.summary and elem.caption_status == "completed")
-                embeddable = f"[Figure: {elem.summary}]" if is_embeddable else ""
+                caption_parts = []
+                if elem.pdf_caption:
+                    caption_parts.append(f"PDF Caption: {elem.pdf_caption}")
+                if elem.summary:
+                    caption_parts.append(f"Visual Description: {elem.summary}")
+
+                combined_caption = " | ".join(caption_parts) if caption_parts else "Figure image"
+                embeddable = f"[Section: {current_heading_path}]\n[Figure: {combined_caption}]" if is_embeddable else ""
 
                 chunks.append(
                     ChunkData(
@@ -80,16 +88,16 @@ class SectionAwareChunker:
                         page_number=elem.page_number,
                         content=elem.content,
                         embeddable_text=embeddable,
-                        token_count=self._estimate_tokens(elem.content),
-                        heading_path=heading_path,
+                        token_count=self._estimate_tokens(combined_caption),
+                        heading_path=current_heading_path,
                         bbox=elem.bbox,
                         is_embeddable=is_embeddable,
                     )
                 )
 
             else:  # ElementType.TEXT
-                heading_path = " > ".join(heading_stack) if heading_stack else None
-                prefix = f"[Section: {heading_path}]\n" if heading_path else ""
+                current_heading_path = " > ".join(heading_stack) if heading_stack else None
+                prefix = f"[Section: {current_heading_path}]\n" if current_heading_path else ""
                 tokens = self._estimate_tokens(elem.content)
 
                 if tokens <= self.target_tokens:
@@ -100,7 +108,7 @@ class SectionAwareChunker:
                             content=elem.content,
                             embeddable_text=f"{prefix}{elem.content}",
                             token_count=tokens,
-                            heading_path=heading_path,
+                            heading_path=current_heading_path,
                             bbox=elem.bbox,
                             is_embeddable=True,
                         )
@@ -125,7 +133,7 @@ class SectionAwareChunker:
                                 content=sub_text,
                                 embeddable_text=f"{prefix}{sub_text}",
                                 token_count=self._estimate_tokens(sub_text),
-                                heading_path=heading_path,
+                                heading_path=current_heading_path,
                                 bbox=elem.bbox,
                                 is_embeddable=True,
                             )

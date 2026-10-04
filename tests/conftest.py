@@ -1,16 +1,16 @@
 import asyncio
-import os
 import tempfile
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import app
-from app.core.db import Base, get_db
-from app.adapters.local_storage import LocalStorageAdapter
 from app.adapters.factory import get_storage_adapter
+from app.adapters.local_storage import LocalStorageAdapter
+from app.core.db import Base, get_db
+from app.main import app
 
 # Use SQLite in-memory for fast asynchronous unit testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

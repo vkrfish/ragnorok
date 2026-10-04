@@ -1,17 +1,20 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from sqlalchemy import (
-    String,
-    DateTime,
-    Enum as SQLEnum,
-    ForeignKey,
-    Integer,
-    Text,
     JSON,
     BigInteger,
+    DateTime,
     Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,7 +57,7 @@ class Notebook(Base):
         nullable=False,
     )
 
-    sources: Mapped[List["Source"]] = relationship(
+    sources: Mapped[list["Source"]] = relationship(
         "Source", back_populates="notebook", cascade="all, delete-orphan"
     )
 
@@ -77,7 +80,12 @@ class Source(Base):
     status: Mapped[SourceStatus] = mapped_column(
         SQLEnum(SourceStatus), default=SourceStatus.PENDING, index=True, nullable=False
     )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    figures_pending: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    figures_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    figures_failed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    ocr_pages_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    ingestion_cost_usd: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
@@ -89,10 +97,10 @@ class Source(Base):
     )
 
     notebook: Mapped["Notebook"] = relationship("Notebook", back_populates="sources")
-    elements: Mapped[List["Element"]] = relationship(
+    elements: Mapped[list["Element"]] = relationship(
         "Element", back_populates="source", cascade="all, delete-orphan"
     )
-    chunks: Mapped[List["Chunk"]] = relationship(
+    chunks: Mapped[list["Chunk"]] = relationship(
         "Chunk", back_populates="source", cascade="all, delete-orphan"
     )
 
@@ -107,12 +115,18 @@ class Element(Base):
         String(36), ForeignKey("sources.id", ondelete="CASCADE"), index=True, nullable=False
     )
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    bbox: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    bbox: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     type: Mapped[ElementType] = mapped_column(SQLEnum(ElementType), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    image_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    caption_status: Mapped[Optional[str]] = mapped_column(String(50), default="pending")
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    caption_status: Mapped[str | None] = mapped_column(String(50), default="pending")
+    structured_chart_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    ocr_applied: Mapped[bool] = mapped_column(default=False, nullable=False)
+    ocr_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    model_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    prompt_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
     parser_version: Mapped[str] = mapped_column(String(50), default="1.0.0")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
@@ -132,18 +146,37 @@ class Chunk(Base):
     )
     notebook_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
     user_id: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
-    element_id: Mapped[Optional[str]] = mapped_column(
+    element_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("elements.id", ondelete="SET NULL"), nullable=True
     )
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embeddable_text: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    heading_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    bbox: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    heading_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    bbox: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     embedding_model_version: Mapped[str] = mapped_column(String(50), default="bge-m3-v1")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
 
     source: Mapped["Source"] = relationship("Source", back_populates="chunks")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    conversation_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    notebook_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" | "assistant"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )

@@ -1,0 +1,12 @@
+You are a precise table summarizer. Your task is to provide a non-inferential, factual summary of the following table content.
+
+STRICT INSTRUCTIONS:
+1. Restate ONLY what the table explicitly contains: column headers, key categories, and explicit data ranges or entries.
+2. DO NOT infer, extrapolate trends, or make analytical claims (e.g., do NOT say "Revenue grew steadily" unless the table explicitly has a row stating growth percentage).
+3. Do not invent any numbers or categories.
+
+<UNTRUSTED_TABLE_CONTENT>
+{table_content}
+</UNTRUSTED_TABLE_CONTENT>
+
+Provide a concise, factual summary restating the structure and cell contents.

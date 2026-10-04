@@ -1,7 +1,7 @@
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Header, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.errors import NotFoundError
@@ -11,7 +11,7 @@ from app.domain.schemas import NotebookCreate, NotebookResponse
 router = APIRouter()
 
 
-def get_user_id(x_user_id: Optional[str] = Header(None, alias="X-User-ID")) -> str:
+def get_user_id(x_user_id: str | None = Header(None, alias="X-User-ID")) -> str:
     """Extract user_id for tenant isolation boundary."""
     return x_user_id or "default_user"
 
@@ -33,7 +33,7 @@ async def create_notebook(
     return notebook
 
 
-@router.get("/", response_model=List[NotebookResponse])
+@router.get("/", response_model=list[NotebookResponse])
 async def list_notebooks(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_user_id),

@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Tuple
+
 from app.domain.schemas import Citation
 
 
@@ -9,8 +9,8 @@ class CitationResolver:
     def resolve_and_validate(
         self,
         llm_text: str,
-        retrieved_context_map: Dict[str, dict], # e.g. {"[1]": {source_id, page, element_id, bbox, content}}
-    ) -> Tuple[str, List[Citation], bool]:
+        retrieved_context_map: dict[str, dict], # e.g. {"[1]": {source_id, page, element_id, bbox, content}}
+    ) -> tuple[str, list[Citation], bool]:
         """
         Parses llm_text for handles like [1], [2].
         Returns: (cleaned_text, resolved_citations, is_valid)
@@ -20,7 +20,7 @@ class CitationResolver:
 
         # Find handles like [1], [2] in llm_text
         found_handles = re.findall(r"\[(\d+)\]", llm_text)
-        valid_citations: List[Citation] = []
+        valid_citations: list[Citation] = []
         seen_handles = set()
 
         for h in found_handles:

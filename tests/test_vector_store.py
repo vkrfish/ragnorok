@@ -1,4 +1,5 @@
 import pytest
+
 from app.adapters.vector_store import InMemoryVectorStore
 from app.domain.schemas import TenantScope
 

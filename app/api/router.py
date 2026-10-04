@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.v1 import health, notebooks, sources, chat
+
+from app.api.v1 import chat, health, notebooks, sources
 
 api_router = APIRouter()
 

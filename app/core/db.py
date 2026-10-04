@@ -1,15 +1,19 @@
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+
 from app.core.config import settings
 
 
 class Base(DeclarativeBase):
     """Base ORM model class."""
-    pass
 
+
+from typing import Any
 
 # Create async engine for PostgreSQL (Supabase / PgBouncer) or SQLite
+connect_args: dict[str, Any] = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 else:
