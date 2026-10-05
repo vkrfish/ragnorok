@@ -10,7 +10,7 @@ async def test_create_notebook_and_upload_source(client: AsyncClient):
 
     # 1. Create Notebook
     create_nb_res = await client.post(
-        "/api/v1/notebooks/",
+        "/v1/notebooks",
         json={"title": "Test Research Notebook"},
         headers=headers,
     )
@@ -24,7 +24,7 @@ async def test_create_notebook_and_upload_source(client: AsyncClient):
     files = {"file": ("research_paper.pdf", io.BytesIO(pdf_content), "application/pdf")}
 
     upload_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/sources",
+        f"/v1/notebooks/{notebook_id}/sources",
         files=files,
         headers=headers,
     )
@@ -38,7 +38,7 @@ async def test_create_notebook_and_upload_source(client: AsyncClient):
     # 3. Idempotent upload test (upload exact same file again)
     files_dupe = {"file": ("research_paper_copy.pdf", io.BytesIO(pdf_content), "application/pdf")}
     upload_dupe_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/sources",
+        f"/v1/notebooks/{notebook_id}/sources",
         files=files_dupe,
         headers=headers,
     )
@@ -49,7 +49,7 @@ async def test_create_notebook_and_upload_source(client: AsyncClient):
 
     # 4. List Sources
     list_res = await client.get(
-        f"/api/v1/notebooks/{notebook_id}/sources",
+        f"/v1/notebooks/{notebook_id}/sources",
         headers=headers,
     )
     assert list_res.status_code == 200
@@ -59,7 +59,7 @@ async def test_create_notebook_and_upload_source(client: AsyncClient):
 
     # 5. Get Source details
     get_res = await client.get(
-        f"/api/v1/notebooks/{notebook_id}/sources/{source['id']}",
+        f"/v1/notebooks/{notebook_id}/sources/{source['id']}",
         headers=headers,
     )
     assert get_res.status_code == 200

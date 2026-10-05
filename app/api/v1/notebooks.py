@@ -16,7 +16,7 @@ def get_user_id(x_user_id: str | None = Header(None, alias="X-User-ID")) -> str:
     return x_user_id or "default_user"
 
 
-@router.post("/", response_model=NotebookResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=NotebookResponse, status_code=status.HTTP_201_CREATED)
 async def create_notebook(
     payload: NotebookCreate,
     db: AsyncSession = Depends(get_db),
@@ -33,7 +33,7 @@ async def create_notebook(
     return notebook
 
 
-@router.get("/", response_model=list[NotebookResponse])
+@router.get("", response_model=list[NotebookResponse])
 async def list_notebooks(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_user_id),

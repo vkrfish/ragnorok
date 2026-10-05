@@ -81,13 +81,23 @@ class BGEReranker(Reranker):
             return reranked[:top_n], latency_ms
 
     def _heuristic_rerank(self, query: str, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        query_words = set(query.lower().split())
+        stopwords = {
+            "what", "is", "the", "of", "in", "a", "an", "and", "or", "to", "for", "on", "with", "by", "at", "from",
+            "explain", "about", "tell", "me", "show", "give", "describe", "summary", "details", "please", "can", "you",
+            "how", "why", "where", "when", "who", "which"
+        }
+        cleaned_query = query.lower().replace("?", "").replace(".", "").replace(",", "")
+        raw_words = cleaned_query.split()
+        keywords = [w for w in raw_words if w not in stopwords]
+        query_words = keywords if keywords else raw_words
+
         for c in candidates:
             text = c.get("content", "").lower()
             overlap = sum(1 for w in query_words if w in text)
-            exact_phrase_bonus = 0.5 if query.lower() in text else 0.0
+            exact_phrase_bonus = 0.4 if cleaned_query in text else (0.25 if any(w in text for w in query_words) else 0.0)
             rrf_base = c.get("rrf_score", 0.5)
-            c["rerank_score"] = min(1.0, (overlap / max(1, len(query_words))) * 0.6 + rrf_base * 0.4 + exact_phrase_bonus)
+            overlap_score = (overlap / max(1, len(query_words))) * 0.5
+            c["rerank_score"] = min(1.0, overlap_score + rrf_base * 0.4 + exact_phrase_bonus)
 
         candidates.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
         return candidates

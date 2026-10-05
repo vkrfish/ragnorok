@@ -34,8 +34,9 @@ class VectorStore(ABC):
         tenant: TenantScope,
         top_k: int = 5,
         min_score: float = 0.0,
+        source_ids: list[str] | None = None,
     ) -> list[VectorSearchResult]:
-        """Dense vector search filtered strictly by TenantScope."""
+        """Dense vector search filtered strictly by TenantScope and optional active source_ids."""
 
     @abstractmethod
     async def search_sparse(
@@ -43,14 +44,15 @@ class VectorStore(ABC):
         query_sparse: SparseVector,
         tenant: TenantScope,
         top_k: int = 5,
+        source_ids: list[str] | None = None,
     ) -> list[VectorSearchResult]:
-        """Sparse BM25 vector search filtered strictly by TenantScope."""
+        """Sparse BM25 vector search filtered strictly by TenantScope and optional active source_ids."""
 
 
 class InMemoryVectorStore(VectorStore):
     """In-memory VectorStore supporting both dense and sparse vector search with TenantScope."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._records: list[dict[str, Any]] = []
 
     async def upsert_chunks(
@@ -82,10 +84,12 @@ class InMemoryVectorStore(VectorStore):
         tenant: TenantScope,
         top_k: int = 5,
         min_score: float = 0.0,
+        source_ids: list[str] | None = None,
     ) -> list[VectorSearchResult]:
         filtered = [
             r for r in self._records
-            if r["notebook_id"] == tenant.notebook_id and r["user_id"] == tenant.user_id
+            if r["notebook_id"] == tenant.notebook_id
+            and (source_ids is None or r["source_id"] in source_ids)
         ]
         if not filtered:
             return []
@@ -117,10 +121,12 @@ class InMemoryVectorStore(VectorStore):
         query_sparse: SparseVector,
         tenant: TenantScope,
         top_k: int = 5,
+        source_ids: list[str] | None = None,
     ) -> list[VectorSearchResult]:
         filtered = [
             r for r in self._records
-            if r["notebook_id"] == tenant.notebook_id and r["user_id"] == tenant.user_id
+            if r["notebook_id"] == tenant.notebook_id
+            and (source_ids is None or r["source_id"] in source_ids)
         ]
         if not filtered or not query_sparse.indices:
             return []

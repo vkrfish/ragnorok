@@ -6,9 +6,11 @@ from typing import Any
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -80,6 +82,7 @@ class Source(Base):
     status: Mapped[SourceStatus] = mapped_column(
         SQLEnum(SourceStatus), default=SourceStatus.PENDING, index=True, nullable=False
     )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     figures_pending: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     figures_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -94,6 +97,10 @@ class Source(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_sources_notebook_is_active", "notebook_id", "is_active"),
     )
 
     notebook: Mapped["Notebook"] = relationship("Notebook", back_populates="sources")
@@ -176,6 +183,7 @@ class ChatMessage(Base):
     user_id: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" | "assistant"
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="complete", nullable=False)  # "complete" | "partial" | "failed"
     citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False

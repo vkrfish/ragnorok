@@ -16,7 +16,7 @@ async def test_full_pdf_to_cited_answer_integration(client: AsyncClient, db_sess
 
     # 1. Create Notebook
     create_nb_res = await client.post(
-        "/api/v1/notebooks/",
+        "/v1/notebooks",
         json={"title": "Integration Test Notebook"},
         headers=headers,
     )
@@ -28,7 +28,7 @@ async def test_full_pdf_to_cited_answer_integration(client: AsyncClient, db_sess
     files = {"file": ("test_doc.pdf", io.BytesIO(pdf_content), "application/pdf")}
 
     upload_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/sources",
+        f"/v1/notebooks/{notebook_id}/sources",
         files=files,
         headers=headers,
     )
@@ -38,7 +38,7 @@ async def test_full_pdf_to_cited_answer_integration(client: AsyncClient, db_sess
 
     # Duplicate Upload Test (Idempotency)
     dupe_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/sources",
+        f"/v1/notebooks/{notebook_id}/sources",
         files={"file": ("test_doc_dupe.pdf", io.BytesIO(pdf_content), "application/pdf")},
         headers=headers,
     )
@@ -58,7 +58,7 @@ async def test_full_pdf_to_cited_answer_integration(client: AsyncClient, db_sess
 
     # 4. Chat Q&A Request
     chat_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/chat",
+        f"/v1/notebooks/{notebook_id}/chat",
         json={"query": "What is the system of record?", "relevance_threshold": 0.0},
         headers=headers,
     )
@@ -74,7 +74,7 @@ async def test_full_pdf_to_cited_answer_integration(client: AsyncClient, db_sess
 
     # 5. Refusal Path Test (High relevance threshold with no matching chunks)
     refusal_res = await client.post(
-        f"/api/v1/notebooks/{notebook_id}/chat",
+        f"/v1/notebooks/{notebook_id}/chat",
         json={"query": "Unrelated topic", "relevance_threshold": 0.999},
         headers=headers,
     )

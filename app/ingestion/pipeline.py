@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.base import StorageAdapter
 from app.adapters.embedder import Embedder
+from app.adapters.sparse_embedder import SparseEmbedder
 from app.adapters.vector_store import VectorStore
 from app.core.config import settings
 from app.core.logging import logger
@@ -30,6 +31,7 @@ class IngestionPipeline:
         storage: StorageAdapter,
         embedder: Embedder,
         vector_store: VectorStore,
+        sparse_embedder: SparseEmbedder | None = None,
         parser: Any | None = None,
         chunker: SectionAwareChunker | None = None,
         ocr_processor: OCRProcessor | None = None,
@@ -40,6 +42,7 @@ class IngestionPipeline:
         self.storage = storage
         self.embedder = embedder
         self.vector_store = vector_store
+        self.sparse_embedder = sparse_embedder or SparseEmbedder()
 
         if parser:
             self.parser = parser
@@ -193,9 +196,11 @@ class IngestionPipeline:
 
             if texts_to_embed:
                 vectors = await self.embedder.embed_batch(texts_to_embed)
+                sparse_vecs = self.sparse_embedder.embed_batch(texts_to_embed)
                 await self.vector_store.upsert_chunks(
                     chunks=embeddable_chunks_data,
                     vectors=vectors,
+                    sparse_vectors=sparse_vecs,
                 )
 
             # Document is searchable early for text & tables!
@@ -293,7 +298,12 @@ class IngestionPipeline:
 
                     if fig_texts:
                         fig_vecs = await self.embedder.embed_batch(fig_texts)
-                        await self.vector_store.upsert_chunks(chunks=fig_embeddable, vectors=fig_vecs)
+                        fig_sparse_vecs = self.sparse_embedder.embed_batch(fig_texts)
+                        await self.vector_store.upsert_chunks(
+                            chunks=fig_embeddable,
+                            vectors=fig_vecs,
+                            sparse_vectors=fig_sparse_vecs,
+                        )
 
             logger.info(f"Ingestion pipeline fully completed for source {source_id}: READY")
             return SourceStatus.READY

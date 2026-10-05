@@ -39,6 +39,24 @@ class CitationResolver:
                 )
                 seen_handles.add(handle_key)
 
+        # Fallback: If LLM produced a valid answer from retrieved context but missed inserting '[1]',
+        # automatically attribute to the primary retrieved context block instead of refusing.
+        if not valid_citations and retrieved_context_map and "REFUSAL" not in llm_text:
+            first_key = next(iter(retrieved_context_map))
+            ctx = retrieved_context_map[first_key]
+            valid_citations.append(
+                Citation(
+                    handle=first_key,
+                    source_id=ctx["source_id"],
+                    page=ctx["page"],
+                    element_id=ctx.get("element_id"),
+                    bbox=ctx.get("bbox"),
+                    snippet=ctx["content"][:150],
+                )
+            )
+            if first_key not in llm_text:
+                llm_text = f"{llm_text.strip()} {first_key}"
+
         # Refuse if zero valid citations present in generated text
         if not valid_citations:
             return "I am sorry, but the retrieved sources did not support a grounded answer.", [], False

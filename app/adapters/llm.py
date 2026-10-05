@@ -1,5 +1,7 @@
+import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -25,6 +27,16 @@ class LLMGenerator(ABC):
         images: list[ImagePart] | None = None,
     ) -> LLMResponse:
         """Generate response text based on prompt and optional images."""
+
+    @abstractmethod
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        images: list[ImagePart] | None = None,
+    ) -> AsyncIterator[str]:
+        """Stream response text tokens based on prompt and optional images."""
+        yield ""  # mypy placeholder
 
 
 class GeminiLLMGenerator(LLMGenerator):
@@ -89,6 +101,48 @@ class GeminiLLMGenerator(LLMGenerator):
             )
             return await fake.generate(prompt, system_prompt, images)
 
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        images: list[ImagePart] | None = None,
+    ) -> AsyncIterator[str]:
+        if not self._client:
+            fake = FakeLLMGenerator()
+            async for token in fake.generate_stream(prompt, system_prompt, images):
+                yield token
+            return
+
+        try:
+            from google.genai import types
+
+            contents: list[Any] = []
+            if images:
+                for img in images:
+                    contents.append(types.Part.from_bytes(data=img.bytes, mime_type=img.mime_type))
+            contents.append(prompt)
+
+            config = None
+            if system_prompt:
+                config = types.GenerateContentConfig(system_instruction=system_prompt)
+
+            response_stream = self._client.models.generate_content_stream(
+                model=self.model_name,
+                contents=contents,
+                config=config,
+            )
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+                    await asyncio.sleep(0)
+        except Exception as e:
+            logger.error(f"Gemini API streaming failed: {e}")
+            fake = FakeLLMGenerator(
+                response_text=f"API Error ({e}). Based on provided sources [1], please verify settings."
+            )
+            async for token in fake.generate_stream(prompt, system_prompt, images):
+                yield token
+
 
 class FakeLLMGenerator(LLMGenerator):
     """Fake LLM Generator for deterministic unit testing."""
@@ -110,6 +164,18 @@ class FakeLLMGenerator(LLMGenerator):
             model_name="fake-gemini-3.5-flash-lite",
             prompt_version="qa_v1",
         )
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        images: list[ImagePart] | None = None,
+    ) -> AsyncIterator[str]:
+        words = self.default_response.split(" ")
+        for idx, word in enumerate(words):
+            token = word if idx == len(words) - 1 else word + " "
+            yield token
+            await asyncio.sleep(0.01)
 
 
 def get_llm_generator() -> LLMGenerator:

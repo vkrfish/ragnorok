@@ -18,6 +18,7 @@ class ParentContextExpander:
         user_id: str,
         db: AsyncSession,
         max_tokens: int = 2000,
+        active_source_ids: list[str] | None = None,
     ) -> tuple[list[dict], dict[str, dict]]:
         """Expand retrieved chunks to parent context with token budget & document order."""
         if not retrieved_chunk_ids:
@@ -26,7 +27,10 @@ class ParentContextExpander:
         # 1. Fetch retrieved chunks from Postgres DB (System of Record)
         db_res = await db.execute(select(Chunk).where(Chunk.id.in_(retrieved_chunk_ids)))
         chunks_by_id = {c.id: c for c in db_res.scalars().all()}
-        target_chunks = [chunks_by_id[cid] for cid in retrieved_chunk_ids if cid in chunks_by_id]
+        target_chunks = [
+            chunks_by_id[cid] for cid in retrieved_chunk_ids
+            if cid in chunks_by_id and (active_source_ids is None or chunks_by_id[cid].source_id in active_source_ids)
+        ]
 
         if not target_chunks:
             return [], {}

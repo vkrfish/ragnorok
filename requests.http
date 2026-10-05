@@ -1,0 +1,101 @@
+### Base Settings
+@baseUrl = http://localhost:8000/v1
+@userId = user-demo-123
+@notebookId = 1a901b82-4dc4-498e-a91a-df4aed471a9a
+@sourceId = 8e49c3e2-ed7f-4c97-96f8-ce88066b8b84
+@elementId = elem-demo-456
+@conversationId = conv-demo-789
+
+### 1. Health Check
+GET {{baseUrl}}/health
+X-User-ID: {{userId}}
+
+### 2. Create Notebook
+POST {{baseUrl}}/notebooks
+X-User-ID: {{userId}}
+Content-Type: application/json
+
+{
+  "title": "Quantum Physics & Machine Learning Research"
+}
+
+### 3. List User Notebooks (Paginated)
+GET {{baseUrl}}/notebooks
+X-User-ID: {{userId}}
+
+### 4. Upload Source Document (Idempotent with Idempotency-Key)
+POST {{baseUrl}}/notebooks/{{notebookId}}/sources
+X-User-ID: {{userId}}
+Idempotency-Key: upload-key-001
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample_paper.pdf"
+Content-Type: application/pdf
+
+< ./sample_pdfs/sample_paper.pdf
+--boundary--
+
+### 5. List Sources in Notebook (ETag & Status Metadata)
+GET {{baseUrl}}/notebooks/{{notebookId}}/sources
+X-User-ID: {{userId}}
+
+### 6. Toggle Source Active State (Idempotent PATCH)
+PATCH {{baseUrl}}/notebooks/{{notebookId}}/sources/{{sourceId}}
+X-User-ID: {{userId}}
+Content-Type: application/json
+
+{
+  "is_active": false
+}
+
+### 7. Get Source Details
+GET {{baseUrl}}/notebooks/{{notebookId}}/sources/{{sourceId}}
+X-User-ID: {{userId}}
+
+### 8. Get Page Metadata (PDF Points, Rotation, Pixel Size, BBoxes)
+GET {{baseUrl}}/sources/{{sourceId}}/pages/1?dpi=150
+X-User-ID: {{userId}}
+
+### 9. Get Page Image (PNG with ETag and Cache-Control)
+GET {{baseUrl}}/sources/{{sourceId}}/pages/1/image?dpi=150
+X-User-ID: {{userId}}
+
+### 10. Get Element Details
+GET {{baseUrl}}/sources/{{sourceId}}/elements/{{elementId}}
+X-User-ID: {{userId}}
+
+### 11. Synchronous Chat Query
+POST {{baseUrl}}/notebooks/{{notebookId}}/chat
+X-User-ID: {{userId}}
+Content-Type: application/json
+
+{
+  "query": "What are the main findings in the quantum computing section?",
+  "conversation_id": "{{conversationId}}",
+  "relevance_threshold": 0.4
+}
+
+### 12. SSE Streaming Chat Query
+POST {{baseUrl}}/notebooks/{{notebookId}}/chat/stream
+X-User-ID: {{userId}}
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "query": "Summarize the key mathematical formulations.",
+  "conversation_id": "{{conversationId}}",
+  "relevance_threshold": 0.35
+}
+
+### 13. List Notebook Conversations (Cursor-Paginated)
+GET {{baseUrl}}/notebooks/{{notebookId}}/conversations?limit=10
+X-User-ID: {{userId}}
+
+### 14. Get Conversation Message History (Cursor-Paginated)
+GET {{baseUrl}}/notebooks/{{notebookId}}/conversations/{{conversationId}}?limit=20
+X-User-ID: {{userId}}
+
+### 15. Delete Source (Cascades to Vectors, Crops, & Page Cache)
+DELETE {{baseUrl}}/notebooks/{{notebookId}}/sources/{{sourceId}}
+X-User-ID: {{userId}}
